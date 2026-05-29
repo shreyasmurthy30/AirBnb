@@ -43,12 +43,13 @@ public class Hotel {
     @Column(nullable = false)
     private Boolean active;
 
-    @OneToMany(mappedBy = "hotel" , fetch = FetchType.LAZY)
-    private List<Room> rooms;
 
     // 1 owner can have many hotels
     @ManyToOne
     private User owner;
+
+    @OneToMany(mappedBy = "hotel")
+    private List<Room> rooms;
 
 
 }
