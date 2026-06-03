@@ -3,8 +3,10 @@ package com.project.airBnbApp.service;
 import com.project.airBnbApp.dto.HotelDto;
 import com.project.airBnbApp.dto.HotelSearchRequest;
 import com.project.airBnbApp.entity.Hotel;
+import com.project.airBnbApp.entity.HotelPriceDto;
 import com.project.airBnbApp.entity.Inventory;
 import com.project.airBnbApp.entity.Room;
+import com.project.airBnbApp.repository.HotelMinPriceRepository;
 import com.project.airBnbApp.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,21 +26,25 @@ import java.time.temporal.ChronoUnit;
 public class InventoryServiceImpl implements InventoryService{
 
     private final InventoryRepository inventoryRepository;
+    private final HotelMinPriceRepository hotelMinPriceRepository;
     private final ModelMapper modelMapper;
 
     @Override
     public void initializeRoomForAYear(Room room) {
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.plusYears(1);
-        for(; !today.isAfter(endDate); today = today.plusDays(1)){
+        for(LocalDate currentDate = today; !currentDate.isAfter(endDate); currentDate = currentDate.plusDays(1)){
+            long daysAhead = ChronoUnit.DAYS.between(today, currentDate);
+            BigDecimal surgeFactor = calculateSurgeFactor(daysAhead);
+            
             Inventory inventory = Inventory.builder()
                             .hotel(room.getHotel())
                                 .room(room)
                                     .bookedCount(0)
                                             .city(room.getHotel().getCity())
-                                                    .date(today)
+                                                    .date(currentDate)
                                                             .price(room.getBasePrice())
-                                                                    .surgeFactor(BigDecimal.ONE)
+                                                                    .surgeFactor(surgeFactor)
                                                                             .totalCount(room.getTotalCount())
                                                                                     .closed(false)
 
@@ -46,6 +52,18 @@ public class InventoryServiceImpl implements InventoryService{
             inventoryRepository.save(inventory);
         }
 
+    }
+
+    private BigDecimal calculateSurgeFactor(long daysAhead) {
+        if (daysAhead <= 7) {
+            return BigDecimal.valueOf(1.5);
+        } else if (daysAhead <= 30) {
+            return BigDecimal.valueOf(1.3);
+        } else if (daysAhead <= 90) {
+            return BigDecimal.valueOf(1.1);
+        } else {
+            return BigDecimal.ONE;
+        }
     }
 
     @Override
@@ -60,16 +78,18 @@ public class InventoryServiceImpl implements InventoryService{
     }
 
     @Override
-    public Page<HotelDto> searchHotels(HotelSearchRequest hotelSearchRequest) {
+    public Page<HotelPriceDto> searchHotels(HotelSearchRequest hotelSearchRequest) {
         log.info("Searching hotels for {} city, from {} to {}", hotelSearchRequest.getCity(), hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate());
         Pageable pageable = PageRequest.of(hotelSearchRequest.getPage(), hotelSearchRequest.getSize());
         long dateCount =
                 ChronoUnit.DAYS.between(hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate()) + 1;
 
-        Page<Hotel> hotelPage = inventoryRepository.findHotelsWithAvailableInventory(hotelSearchRequest.getCity(),
-                hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate(), hotelSearchRequest.getRoomsCount(),
-                dateCount, pageable);
+        // business logic - 90 days
+        Page<HotelPriceDto> hotelPage =
+                hotelMinPriceRepository.findHotelsWithAvailableInventory(hotelSearchRequest.getCity(),
+                        hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate(), hotelSearchRequest.getRoomsCount(),
+                        dateCount, pageable);
 
-        return hotelPage.map((element) -> modelMapper.map(element, HotelDto.class));
+        return hotelPage;
     }
 }

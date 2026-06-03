@@ -45,7 +45,7 @@ public class Hotel {
 
 
     // 1 owner can have many hotels
-    @ManyToOne
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private User owner;
 
     @OneToMany(mappedBy = "hotel")
