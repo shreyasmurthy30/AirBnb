@@ -1,9 +1,7 @@
 package com.project.airBnbApp.service;
 
-import com.project.airBnbApp.dto.HotelDto;
 import com.project.airBnbApp.dto.HotelSearchRequest;
-import com.project.airBnbApp.entity.Hotel;
-import com.project.airBnbApp.entity.HotelPriceDto;
+import com.project.airBnbApp.dto.HotelPriceDto;
 import com.project.airBnbApp.entity.Inventory;
 import com.project.airBnbApp.entity.Room;
 import com.project.airBnbApp.repository.HotelMinPriceRepository;

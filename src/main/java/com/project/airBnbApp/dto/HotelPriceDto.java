@@ -1,5 +1,6 @@
-package com.project.airBnbApp.entity;
+package com.project.airBnbApp.dto;
 
+import com.project.airBnbApp.entity.Hotel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 

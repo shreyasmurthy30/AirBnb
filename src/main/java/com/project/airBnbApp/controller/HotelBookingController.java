@@ -1,9 +1,7 @@
 package com.project.airBnbApp.controller;
 
 
-import com.project.airBnbApp.dto.BookingDto;
-import com.project.airBnbApp.dto.BookingRequest;
-import com.project.airBnbApp.dto.GuestDto;
+import com.project.airBnbApp.dto.*;
 import com.project.airBnbApp.service.BookingService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +26,24 @@ public class HotelBookingController {
     public ResponseEntity<BookingDto> addGuests(@PathVariable Long bookingId,
                                                 @RequestBody List<GuestDto> guestDtoList) {
         return ResponseEntity.ok(bookingService.addGuests(bookingId, guestDtoList));
+    }
+
+    @PostMapping("/{bookingId}/payments")
+    public ResponseEntity<BookingPaymentInitResponseDto> initiatePayment(@PathVariable Long bookingId) {
+        String sessionUrl = bookingService.initiatePayments(bookingId);
+        return ResponseEntity.ok(new BookingPaymentInitResponseDto(sessionUrl));
+    }
+
+    @PostMapping("/{bookingId}/cancel")
+    public ResponseEntity<Void> cancelBooking(@PathVariable Long bookingId) {
+        bookingService.cancelBooking(bookingId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // for frontend to poll the status of the booking
+    @GetMapping("/{bookingId}/status")
+    public ResponseEntity<BookingStatusResponseDto> getBookingStatus(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(new BookingStatusResponseDto(bookingService.getBookingStatus(bookingId)));
     }
 
 }
