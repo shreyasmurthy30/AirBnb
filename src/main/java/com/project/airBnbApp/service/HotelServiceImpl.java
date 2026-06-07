@@ -14,10 +14,13 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static com.project.airBnbApp.util.AppUtils.getCurrentUser;
 
 @Service
 @Slf4j
@@ -38,7 +41,7 @@ public class HotelServiceImpl implements HotelService{
         Hotel hotel = modelMapper.map(hotelDto, Hotel.class);
         hotel.setActive(false);
 
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = getCurrentUser();
         hotel.setOwner(user);
 
         // save the hotel
@@ -56,8 +59,12 @@ public class HotelServiceImpl implements HotelService{
         // returns an optional so throw a runtime exception
         Hotel hotel = hotelRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID : " + id));
 
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(hotel.getOwner())){
+        User user = getCurrentUser();
+        Long currentUserId = user != null ? user.getId() : null;
+        Long ownerId = hotel.getOwner() != null ? hotel.getOwner().getId() : null;
+
+        boolean ownerMatch = currentUserId != null && ownerId != null && Objects.equals(currentUserId, ownerId);
+        if(!ownerMatch){
             throw new UnAuthorisedException("This user does not own this hotel with id: "+id);
         }
 
@@ -71,8 +78,12 @@ public class HotelServiceImpl implements HotelService{
         // returns an optional so throw a runtime exception
         Hotel hotel = hotelRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID : " + id));
 
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(hotel.getOwner())){
+        User user = getCurrentUser();
+        Long currentUserId = user != null ? user.getId() : null;
+        Long ownerId = hotel.getOwner() != null ? hotel.getOwner().getId() : null;
+
+        boolean ownerMatch = currentUserId != null && ownerId != null && Objects.equals(currentUserId, ownerId);
+        if(!ownerMatch){
             throw new UnAuthorisedException("This user does not own this hotel with id: "+id);
         }
 
@@ -89,8 +100,12 @@ public class HotelServiceImpl implements HotelService{
     public void deleteHotelById(Long id) {
         Hotel hotel = hotelRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID : " + id));
 
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(hotel.getOwner())){
+        User user = getCurrentUser();
+        Long currentUserId = user != null ? user.getId() : null;
+        Long ownerId = hotel.getOwner() != null ? hotel.getOwner().getId() : null;
+
+        boolean ownerMatch = currentUserId != null && ownerId != null && Objects.equals(currentUserId, ownerId);
+        if(!ownerMatch){
             throw new UnAuthorisedException("This user does not own this hotel with id: "+id);
         }
 
@@ -113,8 +128,12 @@ public class HotelServiceImpl implements HotelService{
         // returns an optional so throw a runtime exception
         Hotel hotel = hotelRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID : " + id));
 
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(user.equals(hotel.getOwner())){
+        User user = getCurrentUser();
+        Long currentUserId = user != null ? user.getId() : null;
+        Long ownerId = hotel.getOwner() != null ? hotel.getOwner().getId() : null;
+
+        boolean ownerMatch = currentUserId != null && ownerId != null && Objects.equals(currentUserId, ownerId);
+        if(!ownerMatch){
             throw new UnAuthorisedException("This user does not own this hotel with id: "+id);
         }
 
@@ -133,5 +152,17 @@ public class HotelServiceImpl implements HotelService{
                 .stream().map((element) -> modelMapper.map(element, RoomDto.class)).toList();
 
         return new HotelInfoDto(modelMapper.map(hotel, HotelDto.class), rooms);
+    }
+
+    @Override
+    public List<HotelDto> getAllHotels() {
+        User user = getCurrentUser();
+        log.info("Getting all hotels for the admin user with ID: {}", user.getId());
+        List<Hotel> hotels = hotelRepository.findByOwner(user);
+
+        return hotels
+                .stream()
+                .map((element) -> modelMapper.map(element, HotelDto.class))
+                .collect(Collectors.toList());
     }
 }
