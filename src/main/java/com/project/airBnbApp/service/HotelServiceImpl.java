@@ -14,6 +14,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -72,6 +74,7 @@ public class HotelServiceImpl implements HotelService{
     }
 
     @Override
+    @CacheEvict(value = "hotels-info", key = "#id")
     public HotelDto updateHotelById(Long id, HotelDto hotelDto) {
 
         log.info("Updating the Hotel with ID : {}", id);
@@ -97,6 +100,7 @@ public class HotelServiceImpl implements HotelService{
 
     @Override
     @Transactional
+    @CacheEvict(value = "hotels-info", key = "#id")
     public void deleteHotelById(Long id) {
         Hotel hotel = hotelRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID : " + id));
 
@@ -145,6 +149,7 @@ public class HotelServiceImpl implements HotelService{
     }
 
     @Override
+    @Cacheable(value = "hotels-info", key = "#hotelId")
     public HotelInfoDto getHotelInfoById(Long hotelId) {
         Hotel hotel = hotelRepository.findById(hotelId).orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID : " + hotelId));
 

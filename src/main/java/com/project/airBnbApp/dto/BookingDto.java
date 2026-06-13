@@ -10,6 +10,7 @@ import java.util.Set;
 
 @Data
 public class BookingDto {
+    // whats sent as repsonse to init booking
     private Long id;
     private Integer roomsCount;
     private LocalDate checkInDate;

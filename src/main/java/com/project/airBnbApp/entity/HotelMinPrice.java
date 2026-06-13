@@ -17,6 +17,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class HotelMinPrice {
 
+    // The min price of a hotel on a particular day stored in db
+    // it will be used when user is searching for hotel and we want to display min price for that hotel to lure customers
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -41,7 +41,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             }
 
             String token = requestTokenHeader.split("Bearer ")[1];
-            // if token is found means t
+            // if token is found means
             Long userId = jwtService.getUserIdFromToken(token);
 
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {

@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class HotelSearchRequest {
 
-    // what user will send when they are searching for hotel/room
+    //  what user will send when they are searching for hotel/room
     private String city;
     private LocalDate startDate;
     private LocalDate endDate;

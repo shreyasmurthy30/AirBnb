@@ -40,7 +40,7 @@ public class HotelBookingController {
         return ResponseEntity.noContent().build();
     }
 
-    // for frontend to poll the status of the booking
+    // for  frontend to poll the status of the booking
     @GetMapping("/{bookingId}/status")
     public ResponseEntity<BookingStatusResponseDto> getBookingStatus(@PathVariable Long bookingId) {
         return ResponseEntity.ok(new BookingStatusResponseDto(bookingService.getBookingStatus(bookingId)));

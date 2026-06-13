@@ -1,5 +1,6 @@
 package com.project.airBnbApp.service;
 
+import com.project.airBnbApp.dto.HotelSearchCacheData;
 import com.project.airBnbApp.dto.HotelSearchRequest;
 import com.project.airBnbApp.dto.HotelPriceDto;
 import com.project.airBnbApp.dto.InventoryDto;
@@ -14,7 +15,11 @@ import com.project.airBnbApp.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -39,6 +44,7 @@ public class InventoryServiceImpl implements InventoryService{
     private final HotelMinPriceRepository hotelMinPriceRepository;
     private final RoomRepository roomRepository;
     private final ModelMapper modelMapper;
+    private final CacheManager cacheManager;
 
     @Override
     public void initializeRoomForAYear(Room room) {
@@ -52,6 +58,7 @@ public class InventoryServiceImpl implements InventoryService{
                             .hotel(room.getHotel())
                                 .room(room)
                                     .bookedCount(0)
+                                    .reservedCount(0)
                                             .city(room.getHotel().getCity())
                                                     .date(currentDate)
                                                             .price(room.getBasePrice())
@@ -90,16 +97,32 @@ public class InventoryServiceImpl implements InventoryService{
 
     @Override
     public Page<HotelPriceDto> searchHotels(HotelSearchRequest hotelSearchRequest) {
+        String cacheKey = hotelSearchRequest.getCity() + "_" + hotelSearchRequest.getStartDate() + "_"
+                + hotelSearchRequest.getEndDate() + "_" + hotelSearchRequest.getRoomsCount() + "_"
+                + hotelSearchRequest.getPage() + "_" + hotelSearchRequest.getSize();
+
+        Cache cache = cacheManager.getCache("hotels-search");
+        HotelSearchCacheData cached = (cache != null) ? cache.get(cacheKey, HotelSearchCacheData.class) : null;
+
+        if (cached != null) {
+            log.info("Cache hit for hotel search: {}", cacheKey);
+            return new PageImpl<>(cached.getContent(),
+                    PageRequest.of(cached.getPageNumber(), cached.getPageSize()),
+                    cached.getTotalElements());
+        }
+
         log.info("Searching hotels for {} city, from {} to {}", hotelSearchRequest.getCity(), hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate());
         Pageable pageable = PageRequest.of(hotelSearchRequest.getPage(), hotelSearchRequest.getSize());
-        long dateCount =
-                ChronoUnit.DAYS.between(hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate()) + 1;
+        long dateCount = ChronoUnit.DAYS.between(hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate()) + 1;
 
-        // business logic - 90 days
         Page<HotelPriceDto> hotelPage =
                 hotelMinPriceRepository.findHotelsWithAvailableInventory(hotelSearchRequest.getCity(),
                         hotelSearchRequest.getStartDate(), hotelSearchRequest.getEndDate(), hotelSearchRequest.getRoomsCount(),
                         dateCount, pageable);
+
+        if (cache != null) {
+            cache.put(cacheKey, new HotelSearchCacheData(hotelPage));
+        }
 
         return hotelPage;
     }
@@ -127,6 +150,7 @@ public class InventoryServiceImpl implements InventoryService{
 
     @Override
     @Transactional
+    @CacheEvict(value = "hotels-search", allEntries = true)
     public void updateInventory(Long roomId, UpdateInventoryRequestDto updateInventoryRequestDto) {
         log.info("Updating All inventory by room for room with id: {} between date range: {} - {}", roomId,
                 updateInventoryRequestDto.getStartDate(), updateInventoryRequestDto.getEndDate());

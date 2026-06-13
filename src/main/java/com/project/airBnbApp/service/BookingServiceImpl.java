@@ -77,7 +77,7 @@ public class BookingServiceImpl implements BookingService{
             throw new IllegalStateException("Room is not available anymore");
         }
 
-        // Reserve the room/ update the booked count of inventories
+        // Reserve the room/ update the reserved count of inventories
         inventoryRepository.initBooking(room.getId(), bookingRequest.getCheckInDate(),
                 bookingRequest.getCheckOutDate(), bookingRequest.getRoomsCount());
 
@@ -224,8 +224,7 @@ public class BookingServiceImpl implements BookingService{
             String sessionId = session.getId();
             log.info("capturePayment: deserialized Session with id {} from event id {}", sessionId, event.getId());
 
-            Booking booking =
-                    bookingRepository.findByPaymentSessionId(sessionId).orElseThrow(() ->
+            Booking booking = bookingRepository.findByPaymentSessionId(sessionId).orElseThrow(() ->
                             new ResourceNotFoundException("Booking not found for session ID: "+sessionId));
 
             log.info("capturePayment: found booking {} with status {} for session {}", booking.getId(),

@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class BookingPaymentInitResponseDto {
     // what is returned when we do init payment to stripe
-    // they send back a session url
+    // they send back a session url which we will redirect the user to payment page
     private String sessionUrl;
 }

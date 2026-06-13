@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 @Data
 public class BookingRequest {
-    // when we try to book hotel this will be sent
+    // when we try to book hotel we will send this as req - initBooking route
     private Long hotelId;
     private Long roomId;
     private LocalDate checkInDate;

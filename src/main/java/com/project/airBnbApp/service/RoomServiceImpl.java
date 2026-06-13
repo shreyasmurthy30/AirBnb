@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public class RoomServiceImpl implements RoomService{
     private final InventoryService inventoryService;
 
     @Override
+    @CacheEvict(value = "hotels-info", key = "#hotelId")
     public RoomDto createNewRoom(Long hotelId, RoomDto roomDto) {
         log.info("Creating a new room in hotel with ID : {}", hotelId);
 
@@ -84,6 +86,7 @@ public class RoomServiceImpl implements RoomService{
 
     @Override
     @Transactional
+    @CacheEvict(value = "hotels-info", allEntries = true)
     public void deleteRoomById(Long roomId) {
         log.info("Getting room with ID : {}", roomId);
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new ResourceNotFoundException("Room not found with ID : " + roomId));
@@ -100,12 +103,13 @@ public class RoomServiceImpl implements RoomService{
             throw new UnAuthorisedException("This user does not own this room with id: "+ roomId);
         }
 
-        inventoryService.deleteFutureInventories(room);
+        inventoryService.deleteAllInventories(room);
         roomRepository.deleteById(roomId);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "hotels-info", key = "#hotelId")
     public RoomDto updateRoomById(Long hotelId, Long roomId, RoomDto roomDto) {
         log.info("Updating the room with ID: {}", roomId);
         Hotel hotel = hotelRepository
