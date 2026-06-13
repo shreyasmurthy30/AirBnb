@@ -1,5 +1,6 @@
 package com.project.airBnbApp.controller;
 
+import com.project.airBnbApp.annotation.RateLimit;
 import com.project.airBnbApp.dto.LoginDto;
 import com.project.airBnbApp.dto.LoginResponseDto;
 import com.project.airBnbApp.dto.SignUpRequestDto;
@@ -26,11 +27,13 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @RateLimit(maxRequests = 5, windowSeconds = 60)
     @PostMapping("/signup")
     public ResponseEntity<UserDto> signup(@RequestBody SignUpRequestDto signUpRequestDto) {
         return new ResponseEntity<>(authService.signUp(signUpRequestDto), HttpStatus.CREATED);
     }
 
+    @RateLimit(maxRequests = 5, windowSeconds = 60)
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
         String[] tokens = authService.login(loginDto);

@@ -1,6 +1,7 @@
 package com.project.airBnbApp.advice;
 
 
+import com.project.airBnbApp.exception.RateLimitExceededException;
 import com.project.airBnbApp.exception.ResourceNotFoundException;
 import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
@@ -63,6 +64,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleAccessDeniedException(AccessDeniedException ex) {
         ApiError apiError = ApiError.builder()
                 .status(HttpStatus.FORBIDDEN)
+                .message(ex.getMessage())
+                .build();
+        return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiResponse<?>> handleRateLimitExceeded(RateLimitExceededException ex) {
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.TOO_MANY_REQUESTS)
                 .message(ex.getMessage())
                 .build();
         return buildErrorResponseEntity(apiError);

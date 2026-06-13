@@ -1,6 +1,7 @@
 package com.project.airBnbApp.controller;
 
 
+import com.project.airBnbApp.annotation.RateLimit;
 import com.project.airBnbApp.dto.HotelInfoDto;
 import com.project.airBnbApp.dto.HotelSearchRequest;
 import com.project.airBnbApp.dto.HotelPriceDto;
@@ -19,6 +20,7 @@ public class HotelBrowseController {
     private final InventoryService inventoryService;
     private final HotelService hotelService;
 
+    @RateLimit(maxRequests = 20, windowSeconds = 60)
     @GetMapping("/search")
     public ResponseEntity<Page<HotelPriceDto>> searchHotels(@RequestBody HotelSearchRequest hotelSearchRequest) {
         Page<HotelPriceDto> page = inventoryService.searchHotels(hotelSearchRequest);

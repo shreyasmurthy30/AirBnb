@@ -1,6 +1,7 @@
 package com.project.airBnbApp.controller;
 
 
+import com.project.airBnbApp.annotation.RateLimit;
 import com.project.airBnbApp.dto.*;
 import com.project.airBnbApp.service.BookingService;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ public class HotelBookingController {
 
     private final BookingService bookingService;
 
+    @RateLimit(maxRequests = 10, windowSeconds = 60)
     @PostMapping("/initialize")
     public ResponseEntity<BookingDto> initializeBooking(@RequestBody BookingRequest bookingRequest){
         return ResponseEntity.ok(bookingService.initializeBooking(bookingRequest));
