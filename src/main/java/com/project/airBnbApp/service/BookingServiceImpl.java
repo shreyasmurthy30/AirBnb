@@ -6,6 +6,8 @@ import com.project.airBnbApp.dto.GuestDto;
 import com.project.airBnbApp.dto.HotelReportDto;
 import com.project.airBnbApp.entity.*;
 import com.project.airBnbApp.entity.enums.BookingStatus;
+import com.project.airBnbApp.event.BookingCancelledEvent;
+import com.project.airBnbApp.event.BookingConfirmedEvent;
 import com.project.airBnbApp.exception.ResourceNotFoundException;
 import com.project.airBnbApp.exception.UnAuthorisedException;
 import com.project.airBnbApp.repository.*;
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -50,6 +53,7 @@ public class BookingServiceImpl implements BookingService{
     private final InventoryRepository inventoryRepository;
     private final CheckoutService checkoutService;
     private final PricingService pricingService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -154,7 +158,7 @@ public class BookingServiceImpl implements BookingService{
     }
 
     public boolean hasBookingExpired(Booking booking) {
-        return booking.getCreatedAt().plusMinutes(10).isBefore(LocalDateTime.now());
+        return booking.getCreatedAt().plusMinutes(5).isBefore(LocalDateTime.now());
     }
 
 
@@ -230,6 +234,20 @@ public class BookingServiceImpl implements BookingService{
             log.info("capturePayment: found booking {} with status {} for session {}", booking.getId(),
                     booking.getBookingStatus(), sessionId);
 
+            if (booking.getBookingStatus() == BookingStatus.EXPIRED) {
+                log.warn("capturePayment: booking {} is EXPIRED — issuing automatic refund.", booking.getId());
+                try {
+                    RefundCreateParams refundParams = RefundCreateParams.builder()
+                            .setPaymentIntent(session.getPaymentIntent())
+                            .build();
+                    Refund.create(refundParams);
+                    log.info("capturePayment: refund issued for expired booking {}.", booking.getId());
+                } catch (StripeException e) {
+                    log.error("capturePayment: failed to refund expired booking {}: {}", booking.getId(), e.getMessage());
+                }
+                return;
+            }
+
             booking.setBookingStatus(BookingStatus.CONFIRMED);
             bookingRepository.save(booking);
 
@@ -242,6 +260,19 @@ public class BookingServiceImpl implements BookingService{
                     booking.getCheckOutDate(), booking.getRoomsCount());
 
             log.info("capturePayment: successfully confirmed booking {} and updated inventory.", booking.getId());
+
+            BookingConfirmedEvent confirmedEvent = new BookingConfirmedEvent(
+                    booking.getId(),
+                    booking.getUser().getName(),
+                    booking.getUser().getEmail(),
+                    booking.getHotel().getName(),
+                    booking.getRoom().getType(),
+                    booking.getCheckInDate(),
+                    booking.getCheckOutDate(),
+                    booking.getAmount()
+            );
+            kafkaTemplate.send("booking-confirmed", confirmedEvent);
+            log.info("Published booking-confirmed event for booking ID: {}", booking.getId());
         } else {
             log.warn("Unhandled event type: {}", event.getType());
         }
@@ -249,12 +280,12 @@ public class BookingServiceImpl implements BookingService{
 
     @Override
     @org.springframework.transaction.annotation.Transactional
-    public void cancelBooking(Long bookingId) {
+    public String cancelBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(
                 () -> new ResourceNotFoundException("Booking not found with id: "+bookingId)
         );
         User user = getCurrentUser();
-        if (!user.equals(booking.getUser())) {
+        if (!Objects.equals(user.getId(), booking.getUser().getId())) {
             throw new UnAuthorisedException("Booking does not belong to this user with id: "+user.getId());
         }
 
@@ -284,6 +315,19 @@ public class BookingServiceImpl implements BookingService{
         } catch (StripeException e) {
             throw new RuntimeException(e);
         }
+
+        BookingCancelledEvent event = new BookingCancelledEvent(
+                booking.getId(),
+                booking.getUser().getName(),
+                booking.getUser().getEmail(),
+                booking.getHotel().getName(),
+                booking.getRoom().getType(),
+                booking.getCheckInDate(),
+                booking.getCheckOutDate()
+        );
+        kafkaTemplate.send("booking-cancelled", event);
+        log.info("Published booking-cancelled event for booking ID: {}", booking.getId());
+        return "Booking with ID " + bookingId + " has been successfully cancelled. Refund will be processed within 5-7 business days.";
     }
 
     @Override
@@ -292,7 +336,7 @@ public class BookingServiceImpl implements BookingService{
                 () -> new ResourceNotFoundException("Booking not found with id: "+bookingId)
         );
         User user = getCurrentUser();
-        if (!user.equals(booking.getUser())) {
+        if (!Objects.equals(user.getId(), booking.getUser().getId())) {
             throw new UnAuthorisedException("Booking does not belong to this user with id: "+user.getId());
         }
 

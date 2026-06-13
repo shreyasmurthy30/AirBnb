@@ -20,6 +20,8 @@ public class Guest {
     @JoinColumn(name = "user_id")
     private User user;
 
+    private String name;
+
     @Enumerated(EnumType.STRING)
     private Gender gender;
 

@@ -35,9 +35,8 @@ public class HotelBookingController {
     }
 
     @PostMapping("/{bookingId}/cancel")
-    public ResponseEntity<Void> cancelBooking(@PathVariable Long bookingId) {
-        bookingService.cancelBooking(bookingId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<String> cancelBooking(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(bookingService.cancelBooking(bookingId));
     }
 
     // for  frontend to poll the status of the booking
