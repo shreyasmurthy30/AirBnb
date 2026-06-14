@@ -3,6 +3,7 @@ package com.project.airBnbApp.controller;
 
 import com.project.airBnbApp.annotation.RateLimit;
 import com.project.airBnbApp.dto.HotelInfoDto;
+import jakarta.validation.Valid;
 import com.project.airBnbApp.dto.HotelSearchRequest;
 import com.project.airBnbApp.dto.HotelPriceDto;
 import com.project.airBnbApp.service.HotelService;
@@ -22,7 +23,7 @@ public class HotelBrowseController {
 
     @RateLimit(maxRequests = 20, windowSeconds = 60)
     @GetMapping("/search")
-    public ResponseEntity<Page<HotelPriceDto>> searchHotels(@RequestBody HotelSearchRequest hotelSearchRequest) {
+    public ResponseEntity<Page<HotelPriceDto>> searchHotels(@Valid @RequestBody HotelSearchRequest hotelSearchRequest) {
         Page<HotelPriceDto> page = inventoryService.searchHotels(hotelSearchRequest);
         return ResponseEntity.ok(page);
     }

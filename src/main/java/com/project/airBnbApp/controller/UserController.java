@@ -5,6 +5,7 @@ import com.project.airBnbApp.dto.BookingDto;
 import com.project.airBnbApp.dto.GuestDto;
 import com.project.airBnbApp.dto.ProfileUpdateRequestDto;
 import com.project.airBnbApp.dto.UserDto;
+import jakarta.validation.Valid;
 import com.project.airBnbApp.service.BookingService;
 import com.project.airBnbApp.service.GuestService;
 import com.project.airBnbApp.service.UserService;
@@ -25,7 +26,7 @@ public class UserController {
     private final GuestService guestService;
 
     @PatchMapping("/profile")
-    public ResponseEntity<Void> updateProfile(@RequestBody ProfileUpdateRequestDto profileUpdateRequestDto) {
+    public ResponseEntity<Void> updateProfile(@Valid @RequestBody ProfileUpdateRequestDto profileUpdateRequestDto) {
         userService.updateProfile(profileUpdateRequestDto);
 
         return ResponseEntity.noContent().build();
@@ -48,12 +49,12 @@ public class UserController {
     }
 
     @PostMapping("/guests")
-    public ResponseEntity<GuestDto> addNewGuest(@RequestBody GuestDto guestDto) {
+    public ResponseEntity<GuestDto> addNewGuest(@Valid @RequestBody GuestDto guestDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(guestService.addNewGuest(guestDto));
     }
 
     @PutMapping("guests/{guestId}")
-    public ResponseEntity<Void> updateGuest(@PathVariable Long guestId, @RequestBody GuestDto guestDto) {
+    public ResponseEntity<Void> updateGuest(@PathVariable Long guestId, @Valid @RequestBody GuestDto guestDto) {
         guestService.updateGuest(guestId, guestDto);
         return ResponseEntity.noContent().build();
     }

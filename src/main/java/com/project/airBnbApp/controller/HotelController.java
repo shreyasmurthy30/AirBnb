@@ -3,6 +3,7 @@ package com.project.airBnbApp.controller;
 import com.project.airBnbApp.dto.BookingDto;
 import com.project.airBnbApp.dto.HotelDto;
 import com.project.airBnbApp.dto.HotelReportDto;
+import jakarta.validation.Valid;
 import com.project.airBnbApp.service.BookingService;
 import com.project.airBnbApp.service.HotelService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class HotelController {
     private final BookingService bookingService;
 
     @PostMapping
-    public ResponseEntity<HotelDto> createNewHotel(@RequestBody HotelDto hotelDto){
+    public ResponseEntity<HotelDto> createNewHotel(@Valid @RequestBody HotelDto hotelDto){
         log.info("Attempting to create a new hotel with name : " + hotelDto.getName());
         HotelDto hotel = hotelService.createNewHotel(hotelDto);
         return new ResponseEntity<>(hotel, HttpStatus.CREATED);
@@ -37,7 +38,7 @@ public class HotelController {
     }
 
     @PutMapping("/{hotelId}")
-    public ResponseEntity<HotelDto> updateHotelById(@PathVariable Long hotelId, @RequestBody HotelDto hotelDto){
+    public ResponseEntity<HotelDto> updateHotelById(@PathVariable Long hotelId, @Valid @RequestBody HotelDto hotelDto){
         HotelDto hotel = hotelService.updateHotelById(hotelId,hotelDto);
         return ResponseEntity.ok(hotel);
     }

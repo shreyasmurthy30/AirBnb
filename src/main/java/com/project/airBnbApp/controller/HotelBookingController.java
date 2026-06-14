@@ -3,6 +3,7 @@ package com.project.airBnbApp.controller;
 
 import com.project.airBnbApp.annotation.RateLimit;
 import com.project.airBnbApp.dto.*;
+import jakarta.validation.Valid;
 import com.project.airBnbApp.service.BookingService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +21,13 @@ public class HotelBookingController {
 
     @RateLimit(maxRequests = 10, windowSeconds = 60)
     @PostMapping("/initialize")
-    public ResponseEntity<BookingDto> initializeBooking(@RequestBody BookingRequest bookingRequest){
+    public ResponseEntity<BookingDto> initializeBooking(@Valid @RequestBody BookingRequest bookingRequest){
         return ResponseEntity.ok(bookingService.initializeBooking(bookingRequest));
     }
 
     @PostMapping("/{bookingId}/addGuests")
     public ResponseEntity<BookingDto> addGuests(@PathVariable Long bookingId,
-                                                @RequestBody List<GuestDto> guestDtoList) {
+                                                @Valid @RequestBody List<GuestDto> guestDtoList) {
         return ResponseEntity.ok(bookingService.addGuests(bookingId, guestDtoList));
     }
 
