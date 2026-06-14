@@ -21,6 +21,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
@@ -53,7 +54,9 @@ public class BookingServiceImpl implements BookingService{
     private final InventoryRepository inventoryRepository;
     private final CheckoutService checkoutService;
     private final PricingService pricingService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Autowired(required = false)
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -271,8 +274,10 @@ public class BookingServiceImpl implements BookingService{
                     booking.getCheckOutDate(),
                     booking.getAmount()
             );
-            kafkaTemplate.send("booking-confirmed", confirmedEvent);
-            log.info("Published booking-confirmed event for booking ID: {}", booking.getId());
+            if (kafkaTemplate != null) {
+                kafkaTemplate.send("booking-confirmed", confirmedEvent);
+                log.info("Published booking-confirmed event for booking ID: {}", booking.getId());
+            }
         } else {
             log.warn("Unhandled event type: {}", event.getType());
         }
@@ -325,8 +330,10 @@ public class BookingServiceImpl implements BookingService{
                 booking.getCheckInDate(),
                 booking.getCheckOutDate()
         );
-        kafkaTemplate.send("booking-cancelled", event);
-        log.info("Published booking-cancelled event for booking ID: {}", booking.getId());
+        if (kafkaTemplate != null) {
+            kafkaTemplate.send("booking-cancelled", event);
+            log.info("Published booking-cancelled event for booking ID: {}", booking.getId());
+        }
         return "Booking with ID " + bookingId + " has been successfully cancelled. Refund will be processed within 5-7 business days.";
     }
 

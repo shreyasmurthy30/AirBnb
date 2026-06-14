@@ -52,6 +52,7 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      KAFKA_ENABLED: ${KAFKA_ENABLED}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/airbnbdb
       SPRING_DATASOURCE_USERNAME: airbnb
       SPRING_DATASOURCE_PASSWORD: airbnb123
