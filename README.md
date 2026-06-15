@@ -1,4 +1,4 @@
-# AirBnB Clone — Hotel Booking API
+# AirBnB — Hotel Booking API
 
 A production-ready hotel booking REST API built with Spring Boot featuring dynamic pricing, Stripe payments, async email notifications, Redis caching and rate limiting.
 
